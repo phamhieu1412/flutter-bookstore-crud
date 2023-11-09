@@ -1,5 +1,10 @@
+import 'package:bookstore_crud/controllers/cart_controller.dart';
+import 'package:bookstore_crud/controllers/popular_product_controller.dart';
+import 'package:bookstore_crud/routes/route_helper.dart';
 import 'package:bookstore_crud/utils/colors.dart';
+import 'package:bookstore_crud/utils/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../utils/dimensions.dart';
 import '../../widgets/app_icon.dart';
@@ -9,10 +14,22 @@ import '../../widgets/icon_and_text.dart';
 import '../../widgets/small_text.dart';
 
 class PopularFoodDetail extends StatelessWidget {
-  const PopularFoodDetail({super.key});
+  final int pageId;
+  final String from;
+
+  const PopularFoodDetail(
+      {super.key, required this.pageId, required this.from});
 
   @override
   Widget build(BuildContext context) {
+    var product =
+        Get.find<PopularProductController>().popularProductList[pageId];
+    Get.find<PopularProductController>()
+        .initData(Get.find<CartController>(), product);
+
+    var star = int.parse('${product.stars}');
+    var unStar = 5 - star;
+
     return Scaffold(
       body: Stack(children: [
         // Mark: Background Image
@@ -22,10 +39,13 @@ class PopularFoodDetail extends StatelessWidget {
             child: Container(
               width: double.maxFinite,
               height: 350,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                   image: DecorationImage(
                       fit: BoxFit.cover,
-                      image: AssetImage("assets/images/food2.jpeg"))),
+                      image: NetworkImage(
+                          "${Constants.BASE_URL}/uploads/${product.img!}")
+                      // image: AssetImage("assets/images/food2.jpeg"),
+                      )),
             )),
         // Mark: Back and add to cart button
         Positioned(
@@ -35,26 +55,67 @@ class PopularFoodDetail extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                GestureDetector(
+                  onTap: () {
+                    if (from == 'cart_page') {
+                      Get.toNamed(RouteHelper.getCart());
+                    } else {
+                      Get.toNamed(RouteHelper.initial);
+                    }
+                  },
+                  child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                          color: AppColors.buttonBackgroundColor,
+                          borderRadius: BorderRadius.circular(25)),
+                      child: const AppIcon(
+                          icon: Icons.arrow_back_ios_new,
+                          size: 50,
+                          sizeIcon: 18)),
+                ),
                 Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                        color: AppColors.buttonBackgroundColor,
-                        borderRadius: BorderRadius.circular(20)),
-                    child: const AppIcon(
-                        icon: Icons.arrow_back_ios_new,
-                        size: 40,
-                        sizeIcon: 18)),
-                Container(
-                  width: 40,
-                  height: 40,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
                       color: AppColors.buttonBackgroundColor,
-                      borderRadius: BorderRadius.circular(20)),
-                  child: const AppIcon(
-                      icon: Icons.shopping_cart_outlined,
-                      size: 40,
-                      sizeIcon: 20),
+                      borderRadius: BorderRadius.circular(25)),
+                  child: GetBuilder<PopularProductController>(
+                      builder: (popularProduct) {
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Get.toNamed(RouteHelper.getCart());
+                          },
+                          child: const AppIcon(
+                            icon: Icons.shopping_cart_outlined,
+                            size: 50,
+                            sizeIcon: 22,
+                          ),
+                        ),
+                        popularProduct.totalItemsInCart == '0'
+                            ? Container()
+                            : Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 22,
+                                  height: 22,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.mainColor,
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: BigText(
+                                    size: 10,
+                                    text: popularProduct.totalItemsInCart,
+                                    color: Colors.white,
+                                  ),
+                                )),
+                      ],
+                    );
+                  }),
                 ),
               ],
             )),
@@ -74,8 +135,8 @@ class PopularFoodDetail extends StatelessWidget {
                 color: Colors.white),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const BigText(
-                text: "Mon an 1",
+              BigText(
+                text: product.name!,
                 size: 22,
                 color: Colors.black,
               ),
@@ -84,22 +145,38 @@ class PopularFoodDetail extends StatelessWidget {
               ),
               Row(
                 children: [
-                  Wrap(
-                    direction: Axis.horizontal,
-                    spacing: 1.0, // gap giua cac item
-                    // runSpacing: 14.0, // gap between lines
-                    children: List.generate(5, (index) {
-                      return const Icon(
-                        Icons.star,
-                        color: AppColors.mainColor,
-                        size: 15,
-                      );
-                    }),
+                  Row(
+                    children: [
+                      Wrap(
+                        direction: Axis.horizontal,
+                        spacing: 1.0, // gap giua cac item
+                        // runSpacing: 14.0, // gap between lines
+                        children: List.generate(star, (index) {
+                          return const Icon(
+                            Icons.star,
+                            color: AppColors.mainColor,
+                            size: 15,
+                          );
+                        }),
+                      ),
+                      Wrap(
+                        direction: Axis.horizontal,
+                        spacing: 1.0, // gap giua cac item
+                        // runSpacing: 14.0, // gap between lines
+                        children: List.generate(unStar, (index) {
+                          return const Icon(
+                            Icons.star,
+                            color: AppColors.textColor,
+                            size: 15,
+                          );
+                        }),
+                      ),
+                    ],
                   ),
                   const SizedBox(
                     width: 10,
                   ),
-                  const SmallText(text: "4.5"),
+                  SmallText(text: "${product.stars!}"),
                   const SizedBox(
                     width: 10,
                   ),
@@ -148,60 +225,79 @@ class PopularFoodDetail extends StatelessWidget {
                 height: 10,
               ),
               // Mark: Expanded Tex
-              const Expanded(
+              Expanded(
                   child: SingleChildScrollView(
                 child: ExpandableTextWidget(
                   colorText: AppColors.titleColor,
-                  text:
-                      "Day la doan text dai gioi thieu san pham cua chung toi nhe cac man. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do.Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc doDay la doan text dai gioi thieu san pham cua chung toi nhe cac man. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do.Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc doDay la doan text dai gioi thieu san pham cua chung toi nhe cac man. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do.Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do Day la doan text dai gioi thieu san pham cua chung toi nhe cac man. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do. Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do.Neu yeu thich hay dat ngay no vao gio hang di nha. So luong co han ddo nha, toi noi truoc do",
+                  text: product.description!,
                 ),
               ))
             ]),
           ),
         )
       ]),
-      bottomNavigationBar: Container(
-        height: 120,
-        padding: EdgeInsets.only(
-            top: Dimensions.height30,
-            bottom: Dimensions.height30,
-            left: Dimensions.edgeInsets20,
-            right: Dimensions.edgeInsets20),
-        decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(Dimensions.radius20 * 2),
-                topRight: Radius.circular(Dimensions.radius20 * 2)),
-            color: AppColors.buttonBackgroundColor),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10), color: Colors.white),
-              child: const Row(
-                children: [
-                  Icon(Icons.remove, color: AppColors.signColor),
-                  SizedBox(width: 5),
-                  BigText(
-                    text: "0",
-                  ),
-                  SizedBox(width: 5),
-                  Icon(Icons.add, color: AppColors.signColor),
-                ],
+      bottomNavigationBar:
+          GetBuilder<PopularProductController>(builder: (popularProduct) {
+        return Container(
+          height: 120,
+          padding: EdgeInsets.only(
+              top: Dimensions.height30,
+              bottom: Dimensions.height30,
+              left: Dimensions.edgeInsets20,
+              right: Dimensions.edgeInsets20),
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(Dimensions.radius20 * 2),
+                  topRight: Radius.circular(Dimensions.radius20 * 2)),
+              color: AppColors.buttonBackgroundColor),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        popularProduct.setQuantity(false);
+                      },
+                      child:
+                          const Icon(Icons.remove, color: AppColors.signColor),
+                    ),
+                    const SizedBox(width: 5),
+                    BigText(
+                      text: "${popularProduct.inCartItems}",
+                    ),
+                    const SizedBox(width: 5),
+                    GestureDetector(
+                      onTap: () {
+                        popularProduct.setQuantity(true);
+                      },
+                      child: const Icon(Icons.add, color: AppColors.signColor),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Container(
-              padding: EdgeInsets.all(Dimensions.edgeInsets20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: AppColors.mainColor,
-              ),
-              child: const BigText(text: "\$110 | Add to cart"),
-            )
-          ],
-        ),
-      ),
+              Container(
+                padding: EdgeInsets.all(Dimensions.edgeInsets20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.mainColor,
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    popularProduct.addItem(product);
+                  },
+                  child: BigText(text: "\$${product.price!} | Add to cart"),
+                ),
+              )
+            ],
+          ),
+        );
+      }),
     );
   }
 }

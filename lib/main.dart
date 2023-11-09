@@ -1,10 +1,17 @@
-// import 'package:bookstore_crud/pages/homeFoodPage/main_food_page.dart';
-import 'package:bookstore_crud/pages/popularFoodDetail/popular_food_detail.dart';
+import 'package:bookstore_crud/controllers/cart_controller.dart';
+import 'package:bookstore_crud/controllers/popular_product_controller.dart';
+import 'package:bookstore_crud/controllers/recommended_product_controller.dart';
+import 'package:bookstore_crud/routes/route_helper.dart';
 import 'package:flutter/material.dart';
 // import 'package:get/route_manager.dart';
 import 'package:get/get.dart';
+import 'package:bookstore_crud/helper/dependencies.dart' as deps;
 
-void main() {
+void main() async {
+  // => call api
+  WidgetsFlutterBinding.ensureInitialized();
+  await deps.init();
+
   // => runApp: ham khoi dong app
   runApp(MyApp());
 }
@@ -12,12 +19,19 @@ void main() {
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Fluter Demo App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      // home: const MainFoodPage(),
-      home: const PopularFoodDetail(),
-    );
+    Get.find<CartController>().getCartData();
+
+    return GetBuilder<PopularProductController>(builder: (_) {
+      return GetBuilder<RecommendedProductController>(builder: (_) {
+        return GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Fluter Demo App',
+          theme: ThemeData(primarySwatch: Colors.blue),
+          // home: const SplashPage(),
+          initialRoute: RouteHelper.getSplash(),
+          getPages: RouteHelper.routes,
+        );
+      });
+    });
   }
 }
