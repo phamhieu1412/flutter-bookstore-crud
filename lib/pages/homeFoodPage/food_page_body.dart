@@ -1,9 +1,17 @@
+import 'package:bookstore_crud/controllers/popular_product_controller.dart';
+import 'package:bookstore_crud/controllers/recommended_product_controller.dart';
+import 'package:bookstore_crud/models/products_model.dart';
+import 'package:bookstore_crud/pages/popularFoodDetail/popular_food_detail.dart';
+import 'package:bookstore_crud/routes/route_helper.dart';
 import 'package:bookstore_crud/utils/colors.dart';
+import 'package:bookstore_crud/utils/constants.dart';
 import 'package:bookstore_crud/utils/dimensions.dart';
 import 'package:bookstore_crud/widgets/big_text.dart';
+import 'package:bookstore_crud/widgets/loading.dart';
 import 'package:bookstore_crud/widgets/small_text.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 import '../../widgets/icon_and_text.dart';
 
@@ -33,6 +41,7 @@ class _FoodPageBodyState extends State<FoodPageBody> {
   @override
   void dispose() {
     pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -40,31 +49,43 @@ class _FoodPageBodyState extends State<FoodPageBody> {
     return Column(
       children: [
         // Danh sách slide
-        Container(
-          // color: Colors.redAccent,
-          margin: const EdgeInsets.only(top: 0),
-          height: Dimensions.pageView,
-          child: PageView.builder(
-              controller: pageController, // => toc do luot qua cua slide
-              itemCount: 5, // => so luong item slider
-              itemBuilder: (context, position) {
-                return _buildPageItem(position);
-              }),
-        ),
+        // Mark: GetBuilder => dùng để truy cập vào class PopularProductController
+        GetBuilder<PopularProductController>(builder: (popularProducts) {
+          return popularProducts.isFetching
+              ? const Loading()
+              : Container(
+                  // color: Colors.redAccent,
+                  margin: const EdgeInsets.only(top: 0),
+                  height: Dimensions.pageView,
+                  child: PageView.builder(
+                      controller:
+                          pageController, // => toc do luot qua cua slide
+                      itemCount: popularProducts
+                          .popularProductList.length, // => so luong item slider
+                      itemBuilder: (context, position) {
+                        return _buildPageItem(position,
+                            popularProducts.popularProductList[position]);
+                      }),
+                );
+        }),
         const SizedBox(
           height: 5,
         ),
         // Danh sách dots
-        DotsIndicator(
-          dotsCount: 5,
-          position: _currentPageValue,
-          decorator: DotsDecorator(
-              activeColor: AppColors.mainColor,
-              size: const Size.square(9.0),
-              activeSize: const Size(18.0, 9.0),
-              activeShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(5.0))),
-        ),
+        GetBuilder<PopularProductController>(builder: (popularProducts) {
+          return DotsIndicator(
+            dotsCount: popularProducts.popularProductList.isNotEmpty
+                ? popularProducts.popularProductList.length
+                : 1,
+            position: _currentPageValue,
+            decorator: DotsDecorator(
+                activeColor: AppColors.mainColor,
+                size: const Size.square(9.0),
+                activeSize: const Size(18.0, 9.0),
+                activeShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(5.0))),
+          );
+        }),
         //
         const SizedBox(
           height: 20,
@@ -77,7 +98,7 @@ class _FoodPageBodyState extends State<FoodPageBody> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const BigText(text: "Popular"),
+              const BigText(text: "Recommended"),
               const SizedBox(width: 10),
               Container(
                 margin: const EdgeInsets.only(bottom: 2),
@@ -98,23 +119,27 @@ class _FoodPageBodyState extends State<FoodPageBody> {
           ),
         ),
         // list posts
-        Container(
-          margin: const EdgeInsets.only(top: 0),
-          height: 1400,
-          child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-              physics: const NeverScrollableScrollPhysics(),
-              // shrinkWrap: true,
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return _buildPostItem();
-              }),
-        )
+        GetBuilder<RecommendedProductController>(
+            builder: (recommendedProducts) {
+          return Container(
+            margin: const EdgeInsets.only(top: 0),
+            height: 1400,
+            child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+                physics: const NeverScrollableScrollPhysics(),
+                // shrinkWrap: true,
+                itemCount: recommendedProducts.recommendedProductList.length,
+                itemBuilder: (context, index) {
+                  return _buildPostItem(
+                      recommendedProducts.recommendedProductList[index], index);
+                }),
+          );
+        }),
       ],
     );
   }
 
-  Widget _buildPageItem(int idx) {
+  Widget _buildPageItem(int idx, ProductModel popularProduct) {
     Matrix4 matrix = Matrix4.identity();
     if (idx == _currentPageValue.floor()) {
       // vị trí index -2 -1 [0] 1 2
@@ -148,16 +173,22 @@ class _FoodPageBodyState extends State<FoodPageBody> {
       transform: matrix,
       child: Stack(
         children: [
-          Container(
-            height: Dimensions
-                .pageViewContainer, // => sao bỏ vào stack thì height mới được active nhỉ?
-            margin: const EdgeInsets.only(left: 5, right: 5),
-            decoration: BoxDecoration(
-                color: idx.isEven ? Colors.limeAccent : Colors.blueAccent,
-                borderRadius: BorderRadius.circular(30),
-                image: const DecorationImage(
-                    fit: BoxFit.cover,
-                    image: AssetImage("assets/images/food1.jpeg"))),
+          GestureDetector(
+            onTap: () {
+              Get.toNamed(RouteHelper.getPopularFood(idx, 'home_page'));
+            },
+            child: Container(
+              height: Dimensions
+                  .pageViewContainer, // => sao bỏ vào stack thì height mới được active nhỉ?
+              margin: const EdgeInsets.only(left: 5, right: 5),
+              decoration: BoxDecoration(
+                  color: idx.isEven ? Colors.limeAccent : Colors.blueAccent,
+                  borderRadius: BorderRadius.circular(30),
+                  image: DecorationImage(
+                      fit: BoxFit.cover,
+                      image: NetworkImage(
+                          "${Constants.BASE_URL}/uploads/${popularProduct.img!}"))),
+            ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
@@ -186,7 +217,7 @@ class _FoodPageBodyState extends State<FoodPageBody> {
                     child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const BigText(text: "Mon an 1"),
+                          BigText(text: popularProduct.name!),
                           const SizedBox(
                             height: 5,
                           ),
@@ -196,7 +227,8 @@ class _FoodPageBodyState extends State<FoodPageBody> {
                                 direction: Axis.horizontal,
                                 spacing: 1.0, // gap giua cac item
                                 // runSpacing: 14.0, // gap between lines
-                                children: List.generate(5, (index) {
+                                children: List.generate(popularProduct.stars!,
+                                    (index) {
                                   return const Icon(
                                     Icons.star,
                                     color: AppColors.mainColor,
@@ -207,7 +239,7 @@ class _FoodPageBodyState extends State<FoodPageBody> {
                               const SizedBox(
                                 width: 10,
                               ),
-                              const SmallText(text: "4.5"),
+                              SmallText(text: "${popularProduct.stars!}"),
                               const SizedBox(
                                 width: 10,
                               ),
@@ -255,69 +287,77 @@ class _FoodPageBodyState extends State<FoodPageBody> {
     );
   }
 
-  Widget _buildPostItem() {
+  Widget _buildPostItem(ProductModel recommendedProduct, int index) {
     return Container(
       margin: const EdgeInsets.only(left: 20, right: 20, bottom: 15),
-      child: Row(
-        children: [
-          // image post
-          Container(
-            height: 100,
-            width: 100,
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                image: const DecorationImage(
-                    fit: BoxFit.cover,
-                    image: AssetImage("assets/images/food2.jpeg"))),
-          ),
-          // info post
-          Expanded(
-              child: Container(
-            decoration: const BoxDecoration(
-              borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(10),
-                  bottomRight: Radius.circular(10)),
-              color: Colors.white,
+      child: GestureDetector(
+        onTap: () {
+          Get.toNamed(RouteHelper.getRecommendFood(index));
+        },
+        child: Row(
+          children: [
+            // image post
+            Container(
+              height: 100,
+              width: 100,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  image: DecorationImage(
+                      fit: BoxFit.cover,
+                      image: NetworkImage(
+                          "${Constants.BASE_URL}/uploads/${recommendedProduct.img!}"))),
             ),
-            child: const Padding(
-                padding: EdgeInsets.only(left: 10, right: 5),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 7),
-                    BigText(text: 'Mon nay ngonadadsa asdasda sda a'),
-                    SizedBox(height: 5),
-                    SmallText(text: "Mo ta ne"),
-                    SizedBox(height: 5),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconAndText(
-                          icon: Icons.circle_sharp,
-                          text: "Normal",
-                          textColor: AppColors.mainBlackColor,
-                          iconColor: AppColors.yellowColor,
-                        ),
-                        IconAndText(
-                          icon: Icons.location_on,
-                          text: "1.7 km",
-                          textColor: AppColors.mainBlackColor,
-                          iconColor: AppColors.mainColor,
-                        ),
-                        IconAndText(
-                          icon: Icons.access_time_rounded,
-                          text: "32 min",
-                          textColor: AppColors.mainBlackColor,
-                          iconColor: Colors.orangeAccent,
-                        )
-                      ],
-                    ),
-                    SizedBox(height: 7),
-                  ],
-                )),
-          ))
-        ],
+            // info post
+            Expanded(
+                child: Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(10),
+                    bottomRight: Radius.circular(10)),
+                color: Colors.white,
+              ),
+              child: Padding(
+                  padding: const EdgeInsets.only(left: 10, right: 5),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(height: 7),
+                      BigText(text: recommendedProduct.name!),
+                      const SizedBox(height: 5),
+                      SmallText(
+                          text:
+                              "${recommendedProduct.description!.substring(0, 25)}..."),
+                      const SizedBox(height: 5),
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconAndText(
+                            icon: Icons.circle_sharp,
+                            text: "Normal",
+                            textColor: AppColors.mainBlackColor,
+                            iconColor: AppColors.yellowColor,
+                          ),
+                          IconAndText(
+                            icon: Icons.location_on,
+                            text: "1.7 km",
+                            textColor: AppColors.mainBlackColor,
+                            iconColor: AppColors.mainColor,
+                          ),
+                          IconAndText(
+                            icon: Icons.access_time_rounded,
+                            text: "32 min",
+                            textColor: AppColors.mainBlackColor,
+                            iconColor: Colors.orangeAccent,
+                          )
+                        ],
+                      ),
+                      const SizedBox(height: 7),
+                    ],
+                  )),
+            ))
+          ],
+        ),
       ),
     );
   }
